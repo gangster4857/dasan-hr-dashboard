@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채용 대시보드 | 다산씨엔텍 인사팀</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#F0F2F5;--card:#fff;--sidebar:#0D1B2A;--sidebar2:#1A2E45;
+  --border:#E4E8EF;--border2:#D1D9E6;
+  --teal:#0B7285;--teal-light:#E0F5F8;--teal-mid:#0E8FA5;
+  --gold:#B8912A;--gold-pale:#FDF6E3;
+  --ink:#1C2B3A;--mid:#5C6B7A;--light:#9AAAB8;
+  --green:#059669;--green-bg:#ECFDF5;
+  --red:#DC2626;--red-bg:#FEF2F2;
+  --yellow:#D97706;--yellow-bg:#FFFBEB;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;
+  --blue:#2563EB;--blue-bg:#EFF6FF;
+  --r:8px;--sh:0 1px 3px rgba(0,0,0,.08);--sh-md:0 4px 16px rgba(0,0,0,.1);
+}
+html,body{height:100%;font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5;}
+.layout{display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:230px;flex-shrink:0;background:var(--sidebar);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-mark{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:3px;}
+.sb-logo-name{font-size:14px;font-weight:700;color:#fff;}
+.sb-logo-sub{font-size:11px;color:rgba(255,255,255,.28);margin-top:1px;}
+.sb-section{padding:16px 20px 5px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.22);}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 20px;
+  font-size:13px;color:rgba(255,255,255,.52);cursor:pointer;
+  border-left:3px solid transparent;transition:all .15s;text-decoration:none;
+}
+.sb-item:hover{color:#fff;background:rgba(255,255,255,.05);}
+.sb-item.active{color:#fff;background:rgba(11,114,133,.25);border-left-color:var(--teal-mid);}
+.sb-icon{font-size:15px;width:20px;text-align:center;}
+.sb-divider{border:none;border-top:1px solid rgba(255,255,255,.07);margin:6px 0;}
+
+/* 공고 선택 드롭다운 in sidebar */
+.sb-job-select{
+  margin:8px 12px;padding:8px 10px;
+  border:1px solid rgba(255,255,255,.15);border-radius:6px;
+  background:rgba(255,255,255,.07);color:#fff;
+  font-family:inherit;font-size:12px;width:calc(100% - 24px);
+  cursor:pointer;outline:none;
+}
+.sb-job-select option{background:#0D1B2A;color:#fff;}
+.sb-footer{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);}
+.sb-footer p{font-size:11px;color:rgba(255,255,255,.22);line-height:1.7;}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:15px;font-weight:700;}
+.job-badge{
+  background:var(--teal-light);color:var(--teal);
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;
+}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.tb-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:7px 13px;border-radius:6px;border:1px solid var(--border);
+  background:var(--card);color:var(--mid);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.tb-btn:hover{border-color:var(--teal);color:var(--teal);}
+.tb-btn.primary{background:var(--teal);color:#fff;border-color:var(--teal);}
+.tb-btn.primary:hover{background:var(--teal-mid);}
+
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+
+/* TABS */
+.tabs{display:flex;gap:3px;margin-bottom:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:4px;}
+.tab{flex:1;text-align:center;padding:7px 12px;font-size:12px;font-weight:600;color:var(--mid);border-radius:6px;cursor:pointer;transition:all .15s;}
+.tab.active{background:var(--teal);color:#fff;}
+.tab:hover:not(.active){background:var(--bg);}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 16px;box-shadow:var(--sh);border-top:3px solid transparent;}
+.kpi.k-teal{border-top-color:var(--teal);}
+.kpi.k-green{border-top-color:var(--green);}
+.kpi.k-gold{border-top-color:var(--gold);}
+.kpi.k-purple{border-top-color:var(--purple);}
+.kpi.k-blue{border-top-color:var(--blue);}
+.kpi-label{font-size:10px;color:var(--light);font-weight:600;letter-spacing:.5px;margin-bottom:5px;}
+.kpi-value{font-size:24px;font-weight:900;color:var(--ink);line-height:1;margin-bottom:3px;}
+.kpi-sub{font-size:11px;color:var(--mid);}
+
+/* CHARTS */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.chart-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);}
+.cc-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.cc-sub{font-size:10px;color:var(--light);margin-bottom:14px;}
+.cw{position:relative;height:190px;}
+.cw.sm{height:155px;}
+
+/* FILTER BAR */
+.filter-bar{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:14px;box-shadow:var(--sh);
+}
+.fl{font-size:11px;font-weight:700;color:var(--mid);letter-spacing:.5px;white-space:nowrap;}
+.fsel{
+  padding:6px 10px;border:1px solid var(--border);border-radius:5px;
+  font-family:inherit;font-size:12px;color:var(--ink);background:#fff;cursor:pointer;outline:none;
+}
+.fsel:focus{border-color:var(--teal);}
+.finp{
+  padding:6px 10px;border:1px solid var(--border);border-radius:5px;
+  font-family:inherit;font-size:12px;color:var(--ink);background:#fff;outline:none;width:150px;
+}
+.finp:focus{border-color:var(--teal);}
+.freset{
+  margin-left:auto;padding:6px 12px;border:1px solid var(--border);
+  border-radius:5px;font-size:12px;color:var(--mid);background:#fff;cursor:pointer;font-family:inherit;
+}
+.freset:hover{border-color:var(--red);color:var(--red);}
+
+/* TABLE */
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;}
+.twrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:960px;}
+thead tr{background:var(--bg);}
+thead th{padding:9px 11px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--light);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--teal);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F8FAFC;}
+tbody td{padding:10px 11px;font-size:12.5px;color:var(--ink);vertical-align:middle;}
+.td-name{font-weight:700;}
+.td-sub{color:var(--mid);font-size:11px;}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
+.b-review{background:var(--yellow-bg);color:var(--yellow);}
+.b-pass{background:var(--green-bg);color:var(--green);}
+.b-fail{background:var(--red-bg);color:var(--red);}
+.b-interview{background:var(--blue-bg);color:var(--blue);}
+.b-hold{background:var(--purple-bg);color:var(--purple);}
+.job-pill{background:var(--teal-light);color:var(--teal);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.act-btn{padding:3px 9px;border-radius:4px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;color:var(--mid);transition:all .1s;margin-right:3px;}
+.act-btn:hover{border-color:var(--teal);color:var(--teal);}
+.act-btn.d:hover{border-color:var(--red);color:var(--red);}
+.empty-row td{text-align:center;padding:40px;color:var(--light);}
+.tcount{font-size:12px;color:var(--mid);margin-bottom:8px;}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;z-index:500;background:rgba(13,27,42,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal{background:#fff;border-radius:10px;width:640px;max-height:88vh;overflow-y:auto;box-shadow:var(--sh-md);}
+.mhd{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.mhd-title{font-size:15px;font-weight:700;}
+.mclose{background:none;border:none;font-size:22px;cursor:pointer;color:var(--light);}
+.mbody{padding:22px;}
+.msec{margin-bottom:18px;}
+.msec-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--teal);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mfield{padding:9px;background:var(--bg);border-radius:5px;}
+.mfield-k{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--light);margin-bottom:2px;}
+.mfield-v{font-size:13px;font-weight:600;color:var(--ink);}
+.mfile{display:flex;align-items:center;gap:7px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:5px;font-size:12px;color:var(--mid);margin-bottom:5px;}
+.status-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+.sbtn{padding:5px 13px;border-radius:16px;border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;}
+.sbtn.a-review{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow);}
+.sbtn.a-pass{background:var(--green-bg);color:var(--green);border-color:var(--green);}
+.sbtn.a-interview{background:var(--blue-bg);color:var(--blue);border-color:var(--blue);}
+.sbtn.a-fail{background:var(--red-bg);color:var(--red);border-color:var(--red);}
+.sbtn.a-hold{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
+.memo-area{width:100%;min-height:72px;padding:9px;border:1px solid var(--border);border-radius:5px;font-family:inherit;font-size:13px;resize:vertical;outline:none;}
+.memo-area:focus{border-color:var(--teal);}
+.save-btn{margin-top:7px;padding:7px 16px;background:var(--teal);color:#fff;border:none;border-radius:5px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* SETUP GUIDE */
+.guide-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-bottom:14px;box-shadow:var(--sh);}
+.guide-step{display:flex;gap:14px;margin-bottom:18px;align-items:flex-start;}
+.guide-step:last-child{margin-bottom:0;}
+.guide-num{width:28px;height:28px;border-radius:50%;background:var(--teal);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.guide-body{}
+.guide-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.guide-desc{font-size:12px;color:var(--mid);line-height:1.7;}
+.guide-code{
+  display:inline-block;background:#1E293B;color:#7DD3FC;
+  font-family:monospace;font-size:11px;padding:2px 8px;border-radius:3px;margin:2px 0;
+}
+.guide-tag{
+  display:inline-block;background:var(--teal-light);color:var(--teal);
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;
+}
+.guide-warn{
+  background:#FFFBEB;border:1px solid #FDE68A;border-radius:5px;
+  padding:10px 14px;font-size:12px;color:#92400E;margin-top:8px;line-height:1.6;
+}
+.notion-fields-table{width:100%;border-collapse:collapse;margin-top:8px;}
+.notion-fields-table th,.notion-fields-table td{padding:7px 10px;border:1px solid var(--border);font-size:12px;text-align:left;}
+.notion-fields-table th{background:var(--bg);font-weight:700;color:var(--mid);}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--ink);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;display:none;box-shadow:var(--sh-md);}
+.toast.show{display:flex;align-items:center;gap:7px;}
+
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+  .chart-row,.chart-row-3{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-mark">현성그룹</div>
+    <div class="sb-logo-name">채용 대시보드</div>
+    <div class="sb-logo-sub">인사팀 전용 · v2.0</div>
+  </div>
+
+  <div class="sb-section">공고 선택</div>
+  <select class="sb-job-select" id="globalJobFilter" onchange="onGlobalJobChange()">
+    <option value="ALL">📋 전체 공고 보기</option>
+    <option value="제형개발연구원">🧪 화장품 제형개발 연구원</option>
+    <!-- 공고 추가 시 여기에 option 추가 -->
+  </select>
+
+  <div class="sb-section">메뉴</div>
+  <div class="sb-item active" onclick="switchTab('overview')"><span class="sb-icon">📊</span>채용 현황</div>
+  <div class="sb-item" onclick="switchTab('applicants')"><span class="sb-icon">👥</span>지원자 목록</div>
+  <div class="sb-item" onclick="switchTab('analytics')"><span class="sb-icon">📈</span>통계 분석</div>
+  <div class="sb-item" onclick="switchTab('setup')"><span class="sb-icon">⚙️</span>연동 설정 가이드</div>
+  <hr class="sb-divider">
+  <div class="sb-section">바로가기</div>
+  <a class="sb-item" href="https://www.notion.so/364281d4321c80d8b220dbf32c7a9e58?source=copy_link" target="_blank"><span class="sb-icon">🔗</span>노션 채용허브</a>
+  <a class="sb-item" href="https://tally.so/r/vGJq08" target="_blank"><span class="sb-icon">📝</span>Tally 폼 보기</a>
+  <div class="sb-footer">
+    <p>현성그룹 인사팀<br>070-4603-1571<br>갱신: <span id="refreshTime">—</span></p>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">채용 관리 대시보드</div>
+      <div class="job-badge" id="currentJobBadge">전체 공고</div>
+    </div>
+    <div class="topbar-right">
+      <button class="tb-btn" onclick="loadData()">🔄 새로고침</button>
+      <button class="tb-btn" onclick="addSampleData()">➕ 샘플 추가</button>
+      <button class="tb-btn primary" onclick="exportCSV()">⬇ CSV 내보내기</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" id="tab-overview" onclick="switchTab('overview')">📊 채용 현황</div>
+      <div class="tab" id="tab-applicants" onclick="switchTab('applicants')">👥 지원자 목록</div>
+      <div class="tab" id="tab-analytics" onclick="switchTab('analytics')">📈 통계 분석</div>
+      <div class="tab" id="tab-setup" onclick="switchTab('setup')">⚙️ 연동 설정</div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="kpi-row">
+        <div class="kpi k-teal"><div class="kpi-label">총 지원자</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">명</div></div>
+        <div class="kpi k-green"><div class="kpi-label">서류 합격</div><div class="kpi-value" id="kpi-pass">0</div><div class="kpi-sub">명</div></div>
+        <div class="kpi k-blue"><div class="kpi-label">면접 진행</div><div class="kpi-value" id="kpi-interview">0</div><div class="kpi-sub">명</div></div>
+        <div class="kpi k-gold"><div class="kpi-label">공고 수</div><div class="kpi-value" id="kpi-jobs">1</div><div class="kpi-sub">개 진행 중</div></div>
+        <div class="kpi k-purple"><div class="kpi-label">합격률</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub">서류 기준</div></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="cc-title">전형 단계별 현황</div><div class="cc-sub">현재 인원 분포</div><div class="cw"><canvas id="cStatus"></canvas></div></div>
+        <div class="chart-card"><div class="cc-title">일별 지원 추이</div><div class="cc-sub">최근 14일</div><div class="cw"><canvas id="cDaily"></canvas></div></div>
+      </div>
+      <div class="chart-row-3">
+        <div class="chart-card"><div class="cc-title">공고별 지원자</div><div class="cc-sub">포지션별 분포</div><div class="cw sm"><canvas id="cByJob"></canvas></div></div>
+        <div class="chart-card"><div class="cc-title">성별 비율</div><div class="cc-sub"></div><div class="cw sm"><canvas id="cGender"></canvas></div></div>
+        <div class="chart-card"><div class="cc-title">경력별 분포</div><div class="cc-sub"></div><div class="cw sm"><canvas id="cCareer"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- APPLICANTS -->
+    <div class="panel" id="panel-applicants">
+      <div class="filter-bar">
+        <span class="fl">🔍 필터</span>
+        <input class="finp" id="f-search" placeholder="이름/이메일" oninput="applyFilters()">
+        <select class="fsel" id="f-job" onchange="applyFilters()">
+          <option value="">공고 전체</option>
+          <option>제형개발연구원</option>
+        </select>
+        <select class="fsel" id="f-status" onchange="applyFilters()">
+          <option value="">단계 전체</option>
+          <option>서류검토중</option><option>서류합격</option>
+          <option>면접진행</option><option>불합격</option><option>보류</option>
+        </select>
+        <select class="fsel" id="f-gender" onchange="applyFilters()">
+          <option value="">성별 전체</option>
+          <option>남성</option><option>여성</option>
+        </select>
+        <select class="fsel" id="f-career" onchange="applyFilters()">
+          <option value="">경력 전체</option>
+          <option>3년 미만</option><option>3~5년</option><option>5~7년</option>
+          <option>7~10년</option><option>10~15년</option><option>15년 이상</option>
+        </select>
+        <select class="fsel" id="f-edu" onchange="applyFilters()">
+          <option value="">학력 전체</option>
+          <option>학사</option><option>석사</option><option>박사</option>
+        </select>
+        <button class="freset" onclick="resetFilters()">초기화</button>
+      </div>
+      <div class="tcount" id="tcount">지원자 0명</div>
+      <div class="tcard">
+        <div class="twrap">
+          <table>
+            <thead><tr>
+              <th onclick="sortTable('name')">이름 ↕</th>
+              <th>공고</th>
+              <th onclick="sortTable('gender')">성별 ↕</th>
+              <th onclick="sortTable('age')">나이 ↕</th>
+              <th>학력</th>
+              <th onclick="sortTable('career')">경력 ↕</th>
+              <th onclick="sortTable('lastSalary')">직전연봉 ↕</th>
+              <th onclick="sortTable('wantSalary')">희망연봉 ↕</th>
+              <th>파일</th>
+              <th onclick="sortTable('status')">단계 ↕</th>
+              <th onclick="sortTable('submittedAt')">지원일 ↕</th>
+              <th>관리</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="panel" id="panel-analytics">
+      <div class="filter-bar">
+        <span class="fl">⚙️ 분석 조건</span>
+        <select class="fsel" id="a-job" onchange="renderAnalytics()">
+          <option value="ALL">전체 공고</option>
+          <option>제형개발연구원</option>
+        </select>
+        <select class="fsel" id="a-period" onchange="renderAnalytics()">
+          <option value="all">전체 기간</option>
+          <option value="7">최근 7일</option>
+          <option value="14">최근 14일</option>
+          <option value="30">최근 30일</option>
+        </select>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi k-teal"><div class="kpi-label">분석 대상</div><div class="kpi-value" id="a-total">0</div><div class="kpi-sub">명</div></div>
+        <div class="kpi k-green"><div class="kpi-label">평균 연령</div><div class="kpi-value" id="a-age">—</div><div class="kpi-sub">세</div></div>
+        <div class="kpi k-gold"><div class="kpi-label">평균 희망연봉</div><div class="kpi-value" id="a-wsalary">—</div><div class="kpi-sub">만원</div></div>
+        <div class="kpi k-blue"><div class="kpi-label">합격률</div><div class="kpi-value" id="a-passrate">—</div><div class="kpi-sub">서류 기준</div></div>
+        <div class="kpi k-purple"><div class="kpi-label">평균 직전연봉</div><div class="kpi-value" id="a-lsalary">—</div><div class="kpi-sub">만원</div></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="cc-title">성별 × 전형단계</div><div class="cc-sub">성별별 전형 현황 비교</div><div class="cw"><canvas id="aGenderStatus"></canvas></div></div>
+        <div class="chart-card"><div class="cc-title">연령대별 지원 현황</div><div class="cc-sub"></div><div class="cw"><canvas id="aAge"></canvas></div></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="cc-title">경력별 지원 현황</div><div class="cc-sub"></div><div class="cw"><canvas id="aCareer"></canvas></div></div>
+        <div class="chart-card"><div class="cc-title">희망연봉 분포</div><div class="cc-sub"></div><div class="cw"><canvas id="aSalary"></canvas></div></div>
+      </div>
+      <div class="chart-row-3">
+        <div class="chart-card"><div class="cc-title">학력별 분포</div><div class="cc-sub"></div><div class="cw sm"><canvas id="aEdu"></canvas></div></div>
+        <div class="chart-card"><div class="cc-title">공고별 지원자 비교</div><div class="cc-sub"></div><div class="cw sm"><canvas id="aByJob"></canvas></div></div>
+        <div class="chart-card"><div class="cc-title">전형 퍼널</div><div class="cc-sub"></div><div class="cw sm"><canvas id="aFunnel"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- SETUP GUIDE -->
+    <div class="panel" id="panel-setup">
+      <div class="guide-card">
+        <div class="cc-title" style="font-size:15px;margin-bottom:4px;">⚙️ Tally → Notion → 대시보드 연동 가이드</div>
+        <div class="cc-sub" style="font-size:12px;margin-bottom:20px;">아래 순서대로 설정하면 지원자가 Tally 폼 제출 시 Notion DB에 자동 저장되고, 이 대시보드에서 관리할 수 있습니다.</div>
+
+        <div class="guide-step">
+          <div class="guide-num">1</div>
+          <div class="guide-body">
+            <div class="guide-title">Notion DB 생성</div>
+            <div class="guide-desc">
+              노션 채용허브 페이지 안에 <span class="guide-tag">+ 새 데이터베이스</span>를 만드세요.<br>
+              아래 컬럼(속성)을 추가합니다:
+              <table class="notion-fields-table">
+                <tr><th>Notion 속성명</th><th>타입</th><th>Tally 연동 필드명</th></tr>
+                <tr><td>이름</td><td>제목(Title)</td><td>이름</td></tr>
+                <tr><td>공고명</td><td>선택(Select)</td><td>지원_공고</td></tr>
+                <tr><td>성별</td><td>선택(Select)</td><td>성별</td></tr>
+                <tr><td>생년월일</td><td>날짜(Date)</td><td>생년월일</td></tr>
+                <tr><td>연락처</td><td>전화번호(Phone)</td><td>연락처</td></tr>
+                <tr><td>이메일</td><td>이메일(Email)</td><td>이메일</td></tr>
+                <tr><td>학력</td><td>선택(Select)</td><td>학력</td></tr>
+                <tr><td>전공</td><td>텍스트(Text)</td><td>전공</td></tr>
+                <tr><td>경력</td><td>선택(Select)</td><td>경력기간</td></tr>
+                <tr><td>직전직장</td><td>텍스트(Text)</td><td>직전_직장명</td></tr>
+                <tr><td>직전연봉</td><td>숫자(Number)</td><td>직전_연봉_만원</td></tr>
+                <tr><td>희망연봉</td><td>숫자(Number)</td><td>희망_연봉_만원</td></tr>
+                <tr><td>전형단계</td><td>선택(Select)</td><td>— (수동 관리)</td></tr>
+                <tr><td>메모</td><td>텍스트(Text)</td><td>— (수동 관리)</td></tr>
+                <tr><td>지원일시</td><td>날짜(Date)</td><td>자동 생성</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-num">2</div>
+          <div class="guide-body">
+            <div class="guide-title">Tally 폼 생성 (무료)</div>
+            <div class="guide-desc">
+              <a href="https://tally.so" target="_blank" style="color:var(--teal);">tally.so</a>에서 회원가입 후 새 폼 생성.<br>
+              위 Notion DB 컬럼과 동일한 필드명으로 질문을 추가합니다.<br>
+              파일 업로드 필드: <span class="guide-code">이력서 / 자기소개서 / 포트폴리오</span> (각각 별도 질문)<br>
+              공고명 필드: 선택지에 공고명을 <span class="guide-code">제형개발연구원</span> 형태로 추가 (공고 추가 시 선택지 추가)
+              <div class="guide-warn">💡 공고를 여러 개 운영할 때는 폼 하나에 "지원 공고 선택" 질문을 추가하거나, 공고마다 별도 Tally 폼을 만들어도 됩니다. 둘 다 같은 Notion DB로 연동 가능합니다.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-num">3</div>
+          <div class="guide-body">
+            <div class="guide-title">Tally → Notion 자동 연동 설정</div>
+            <div class="guide-desc">
+              Tally 폼 편집 화면 → <span class="guide-tag">Integrations</span> → <span class="guide-tag">Notion</span> 선택<br>
+              → Notion 계정 연결 → 위에서 만든 DB 선택 → 필드 매핑<br>
+              → <span class="guide-tag">Save</span> 클릭<br><br>
+              이후 폼 제출 시 자동으로 Notion DB에 행이 추가됩니다.
+              <div class="guide-warn">⚠️ 파일(이력서 등)은 Tally 서버에 저장되고 Notion에는 파일 링크(URL)가 저장됩니다. Notion에서 링크 클릭 시 파일 다운로드 가능합니다.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-num">4</div>
+          <div class="guide-body">
+            <div class="guide-title">Notion API 키 발급 (대시보드 연동용)</div>
+            <div class="guide-desc">
+              <a href="https://www.notion.so/my-integrations" target="_blank" style="color:var(--teal);">notion.so/my-integrations</a> → 새 통합 만들기<br>
+              → 이름: <span class="guide-code">채용 대시보드</span> → 생성<br>
+              → <span class="guide-tag">Internal Integration Token</span> 복사<br>
+              → 노션 채용 DB 페이지 → 우측 상단 <span class="guide-tag">···</span> → <span class="guide-tag">연결 추가</span> → 통합 선택<br>
+              → 아래 설정 칸에 토큰과 DB ID를 입력하세요.
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-num">5</div>
+          <div class="guide-body">
+            <div class="guide-title">대시보드에 API 키 입력</div>
+            <div class="guide-desc" style="margin-bottom:12px;">아래에 입력하면 이 대시보드가 Notion DB 데이터를 실시간으로 읽어옵니다.</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div>
+                <div class="mfield-k" style="margin-bottom:4px;">Notion Integration Token</div>
+                <input id="cfg-token" class="finp" style="width:100%;max-width:480px;" placeholder="secret_xxxxxxxxxxxx" type="password">
+              </div>
+              <div>
+                <div class="mfield-k" style="margin-bottom:4px;">Notion Database ID</div>
+                <input id="cfg-dbid" class="finp" style="width:100%;max-width:480px;" placeholder="32자리 DB ID (URL에서 확인)">
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <button class="tb-btn primary" onclick="saveConfig()">💾 저장 및 연동 테스트</button>
+                <button class="tb-btn" onclick="loadFromNotion()">🔄 Notion에서 불러오기</button>
+              </div>
+              <div id="cfg-status" style="font-size:12px;color:var(--mid);margin-top:4px;"></div>
+            </div>
+            <div class="guide-warn" style="margin-top:12px;">
+              ⚠️ 현재 대시보드는 브라우저 로컬 스토리지(Artifact Storage)를 사용합니다.<br>
+              Notion API는 CORS 제한으로 브라우저에서 직접 호출이 어렵습니다.<br>
+              <strong>실제 운영 권장 방법:</strong> GitHub Pages + Cloudflare Workers(무료)로 프록시 설정하거나, Make(Integromat) / Zapier를 이용해 Notion → Google Sheets 자동 동기화 후 Google Sheets API로 연결하면 됩니다. 필요 시 가이드를 요청해주세요.
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-num">6</div>
+          <div class="guide-body">
+            <div class="guide-title">사람인/잡코리아 공고 URL 설정</div>
+            <div class="guide-desc">
+              <span class="guide-code">01_saramin_posting_v2.html</span> 파일을 열어서<br>
+              <span class="guide-code">https://www.notion.so/364281d4321c80d8b220dbf32c7a9e58?source=copy_link</span> 두 곳을 실제 노션 채용허브 URL로 교체하세요.
+              <div class="guide-warn">💡 노션 페이지 우측 상단 <span class="guide-tag">공유</span> → <span class="guide-tag">웹에 게시</span> → 링크 복사</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- MODAL -->
+<div class="modal-ov" id="modalOv" onclick="closeModalOv(event)">
+  <div class="modal" id="modal">
+    <div class="mhd">
+      <div class="mhd-title" id="mTitle">지원자 상세</div>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let all = [], filtered = [], sortKey = 'submittedAt', sortDir = -1;
+let charts = {}, curModalId = null;
+const PALETTE = ['#0B7285','#059669','#2563EB','#D97706','#7C3AED','#DC2626','#EC4899'];
+const SC = {서류검토중:'#D97706',서류합격:'#059669',면접진행:'#2563EB',불합격:'#DC2626',보류:'#7C3AED'};
+const BC = {서류검토중:'b-review',서류합격:'b-pass',면접진행:'b-interview',불합격:'b-fail',보류:'b-hold'};
+
+// ── STORAGE ──
+async function loadData() {
+  try { const r = await window.storage.get('applicants_v2'); all = r ? JSON.parse(r.value) : []; }
+  catch(e) { all = []; }
+  applyFilters(); renderKPIs(); renderOverviewCharts(); renderAnalytics();
+  const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('refreshTime').textContent = now;
+}
+async function saveData() { await window.storage.set('applicants_v2', JSON.stringify(all)); }
+
+// ── GLOBAL JOB FILTER (sidebar) ──
+function onGlobalJobChange() {
+  const v = document.getElementById('globalJobFilter').value;
+  document.getElementById('currentJobBadge').textContent = v === 'ALL' ? '전체 공고' : v;
+  document.getElementById('f-job').value = v === 'ALL' ? '' : v;
+  document.getElementById('a-job').value = v === 'ALL' ? 'ALL' : v;
+  applyFilters(); renderAnalytics();
+}
+
+// ── SAMPLE DATA ──
+async function addSampleData() {
+  const jobs = ['제형개발연구원','제형개발연구원','제형개발연구원'];
+  const names = ['김민지','이서연','박준혁','최수현','정유진','한동훈','오지은','윤재원','임채린','강민호','신예원','류준서'];
+  const genders = ['여성','여성','남성','여성','여성','남성','여성','남성','여성','남성','여성','남성'];
+  const careers = ['3~5년','5~7년','7~10년','3~5년','10~15년','5~7년','3~5년','7~10년','5~7년','10~15년','3년 미만','7~10년'];
+  const edus = ['학사','석사','학사','석사','석사','학사','학사','학사','석사','박사','학사','학사'];
+  const statuses = ['서류검토중','서류합격','서류검토중','면접진행','서류합격','불합격','서류검토중','서류합격','서류검토중','면접진행','보류','서류검토중'];
+  const lSals = [4200,4800,3900,5200,5800,4400,3600,4700,5100,6200,3200,4900];
+  const wSals = [5000,5500,4500,6000,6800,5000,4200,5500,5800,7000,4000,5600];
+  const births = ['1990-03-15','1988-07-22','1992-11-08','1991-04-30','1985-09-12','1989-01-25','1993-06-03','1987-12-18','1990-08-07','1983-05-20','1995-02-14','1988-10-11'];
+  const base = new Date();
+  const apps = names.map((name,i) => {
+    const d = new Date(base); d.setDate(d.getDate()-Math.floor(Math.random()*14));
+    return { id:'S'+Date.now()+i, submittedAt:d.toISOString(), jobTitle:jobs[i%jobs.length],
+      name, gender:genders[i], birth:births[i], age:new Date().getFullYear()-parseInt(births[i]),
+      phone:'010-'+String(Math.floor(Math.random()*9000+1000))+'-'+String(Math.floor(Math.random()*9000+1000)),
+      email:'applicant'+(i+1)+'@example.com', edu:edus[i], major:['화학공학','화장품과학','생명과학','약학','유기화학'][i%5],
+      career:careers[i], lastCompany:['(주)코스맥스','(주)콜마','(주)한국화장품','원료사A','OEM사B'][i%5],
+      lastSalary:lSals[i], wantSalary:wSals[i],
+      files:[{name:'이력서_'+name+'.pdf',size:512000}],
+      status:statuses[i], memo:'' };
+  });
+  all = [...all, ...apps];
+  await saveData(); await loadData();
+  showToast('✅ 샘플 '+apps.length+'명 추가');
+}
+
+// ── KPIs ──
+function renderKPIs() {
+  const d = getFilteredByGlobalJob();
+  document.getElementById('kpi-total').textContent = d.length;
+  document.getElementById('kpi-pass').textContent = d.filter(a=>a.status==='서류합격').length;
+  document.getElementById('kpi-interview').textContent = d.filter(a=>a.status==='면접진행').length;
+  const jobs = [...new Set(all.map(a=>a.jobTitle).filter(Boolean))];
+  document.getElementById('kpi-jobs').textContent = Math.max(jobs.length,1);
+  const pass = d.filter(a=>['서류합격','면접진행'].includes(a.status)).length;
+  document.getElementById('kpi-rate').textContent = d.length ? (pass/d.length*100).toFixed(0)+'%' : '—';
+}
+
+function getFilteredByGlobalJob() {
+  const v = document.getElementById('globalJobFilter').value;
+  return v === 'ALL' ? all : all.filter(a=>a.jobTitle===v);
+}
+
+// ── OVERVIEW CHARTS ──
+function dc(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function renderOverviewCharts() {
+  const d = getFilteredByGlobalJob();
+
+  // Status doughnut
+  dc('cStatus');
+  const sc = {}; ['서류검토중','서류합격','면접진행','불합격','보류'].forEach(s=>sc[s]=0);
+  d.forEach(a=>{ if(sc[a.status]!==undefined) sc[a.status]++; });
+  charts.cStatus = new Chart(document.getElementById('cStatus'),{type:'doughnut',data:{labels:Object.keys(sc),datasets:[{data:Object.values(sc),backgroundColor:Object.keys(sc).map(k=>SC[k]),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},padding:8}}}}});
+
+  // Daily line
+  dc('cDaily');
+  const labels=[],counts=[];
+  for(let i=13;i>=0;i--){const dd=new Date();dd.setDate(dd.getDate()-i);const key=dd.toISOString().slice(0,10);labels.push(key.slice(5));counts.push(d.filter(a=>a.submittedAt&&a.submittedAt.slice(0,10)===key).length);}
+  charts.cDaily = new Chart(document.getElementById('cDaily'),{type:'line',data:{labels,datasets:[{label:'지원자',data:counts,borderColor:'#0B7285',backgroundColor:'rgba(11,114,133,.1)',tension:.4,fill:true,pointRadius:3,pointBackgroundColor:'#0B7285'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:10}}}}}});
+
+  // By job bar
+  dc('cByJob');
+  const jobs=[...new Set(all.map(a=>a.jobTitle).filter(Boolean))];
+  const jCounts=jobs.map(j=>all.filter(a=>a.jobTitle===j).length);
+  charts.cByJob = new Chart(document.getElementById('cByJob'),{type:'bar',data:{labels:jobs.length?jobs:['제형개발연구원'],datasets:[{data:jobs.length?jCounts:[d.length],backgroundColor:PALETTE,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:10}}}}}});
+
+  // Gender
+  dc('cGender');
+  const gm={남성:0,여성:0,무응답:0};d.forEach(a=>{if(gm[a.gender]!==undefined)gm[a.gender]++;});
+  charts.cGender = new Chart(document.getElementById('cGender'),{type:'pie',data:{labels:Object.keys(gm),datasets:[{data:Object.values(gm),backgroundColor:['#0B7285','#E91E8C','#9AA0AC'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  // Career
+  dc('cCareer');
+  const co=['3년 미만','3~5년','5~7년','7~10년','10~15년','15년 이상'];
+  const cc={};co.forEach(c=>cc[c]=0);d.forEach(a=>{if(cc[a.career]!==undefined)cc[a.career]++;});
+  charts.cCareer = new Chart(document.getElementById('cCareer'),{type:'bar',data:{labels:Object.keys(cc),datasets:[{data:Object.values(cc),backgroundColor:'#7C3AED',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:10}}}}}});
+}
+
+// ── ANALYTICS ──
+function renderAnalytics() {
+  const jobF = document.getElementById('a-job')?.value||'ALL';
+  const period = document.getElementById('a-period')?.value||'all';
+  let d = jobF==='ALL' ? [...all] : all.filter(a=>a.jobTitle===jobF);
+  if(period!=='all'){const cut=new Date();cut.setDate(cut.getDate()-parseInt(period));d=d.filter(a=>new Date(a.submittedAt)>=cut);}
+
+  document.getElementById('a-total').textContent=d.length;
+  const ages=d.map(a=>parseInt(a.age)).filter(Boolean);
+  document.getElementById('a-age').textContent=ages.length?(ages.reduce((s,v)=>s+v,0)/ages.length).toFixed(1):'—';
+  const ws=d.map(a=>parseInt(a.wantSalary)).filter(Boolean);
+  document.getElementById('a-wsalary').textContent=ws.length?Math.round(ws.reduce((s,v)=>s+v,0)/ws.length).toLocaleString():'—';
+  const ls=d.map(a=>parseInt(a.lastSalary)).filter(Boolean);
+  document.getElementById('a-lsalary').textContent=ls.length?Math.round(ls.reduce((s,v)=>s+v,0)/ls.length).toLocaleString():'—';
+  const pass=d.filter(a=>['서류합격','면접진행'].includes(a.status)).length;
+  document.getElementById('a-passrate').textContent=d.length?(pass/d.length*100).toFixed(0)+'%':'—';
+
+  const P=PALETTE;
+  // Gender×Status
+  dc('aGenderStatus');
+  const sts=['서류검토중','서류합격','면접진행','불합격','보류'];
+  const gn=['남성','여성'];
+  charts.aGenderStatus=new Chart(document.getElementById('aGenderStatus'),{type:'bar',data:{labels:gn,datasets:sts.map((s,si)=>({label:s,data:gn.map(g=>d.filter(a=>a.gender===g&&a.status===s).length),backgroundColor:P[si]}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1}}}}});
+
+  // Age
+  dc('aAge');
+  const ab={'20대':0,'30대':0,'40대':0,'50대+':0};
+  d.forEach(a=>{const age=parseInt(a.age)||0;if(age<30)ab['20대']++;else if(age<40)ab['30대']++;else if(age<50)ab['40대']++;else ab['50대+']++;});
+  charts.aAge=new Chart(document.getElementById('aAge'),{type:'bar',data:{labels:Object.keys(ab),datasets:[{data:Object.values(ab),backgroundColor:P,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+
+  // Career
+  dc('aCareer');
+  const co2=['3년 미만','3~5년','5~7년','7~10년','10~15년','15년 이상'];const cc2={};co2.forEach(c=>cc2[c]=0);d.forEach(a=>{if(cc2[a.career]!==undefined)cc2[a.career]++;});
+  charts.aCareer=new Chart(document.getElementById('aCareer'),{type:'bar',data:{labels:Object.keys(cc2),datasets:[{data:Object.values(cc2),backgroundColor:'#0B7285',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:11}}}}}});
+
+  // Salary
+  dc('aSalary');
+  const sb={'3000미만':0,'3000~4000':0,'4000~5000':0,'5000~6000':0,'6000~7000':0,'7000+':0};
+  d.forEach(a=>{const s=parseInt(a.wantSalary)||0;if(s<3000)sb['3000미만']++;else if(s<4000)sb['3000~4000']++;else if(s<5000)sb['4000~5000']++;else if(s<6000)sb['5000~6000']++;else if(s<7000)sb['6000~7000']++;else sb['7000+']++;});
+  charts.aSalary=new Chart(document.getElementById('aSalary'),{type:'bar',data:{labels:Object.keys(sb),datasets:[{data:Object.values(sb),backgroundColor:'#B8912A',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:10}}}}}});
+
+  // Edu
+  dc('aEdu');
+  const em={학사:0,석사:0,박사:0,전문학사:0};d.forEach(a=>{if(em[a.edu]!==undefined)em[a.edu]++;});
+  charts.aEdu=new Chart(document.getElementById('aEdu'),{type:'doughnut',data:{labels:Object.keys(em),datasets:[{data:Object.values(em),backgroundColor:P,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  // By job
+  dc('aByJob');
+  const jobs2=[...new Set(all.map(a=>a.jobTitle).filter(Boolean))];
+  charts.aByJob=new Chart(document.getElementById('aByJob'),{type:'bar',data:{labels:jobs2.length?jobs2:['제형개발연구원'],datasets:[{data:jobs2.length?jobs2.map(j=>d.filter(a=>a.jobTitle===j).length):[d.length],backgroundColor:P,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:10}}}}}});
+
+  // Funnel
+  dc('aFunnel');
+  charts.aFunnel=new Chart(document.getElementById('aFunnel'),{type:'bar',data:{labels:['지원','서류합격','면접'],datasets:[{data:[d.length,d.filter(a=>['서류합격','면접진행'].includes(a.status)).length,d.filter(a=>a.status==='면접진행').length],backgroundColor:['#0B7285','#059669','#2563EB'],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+}
+
+// ── TABLE ──
+function applyFilters() {
+  const search=(document.getElementById('f-search')?.value||'').toLowerCase();
+  const job=document.getElementById('f-job')?.value||'';
+  const status=document.getElementById('f-status')?.value||'';
+  const gender=document.getElementById('f-gender')?.value||'';
+  const career=document.getElementById('f-career')?.value||'';
+  const edu=document.getElementById('f-edu')?.value||'';
+  filtered=all.filter(a=>{
+    if(search&&!a.name?.toLowerCase().includes(search)&&!a.email?.toLowerCase().includes(search))return false;
+    if(job&&a.jobTitle!==job)return false;
+    if(status&&a.status!==status)return false;
+    if(gender&&a.gender!==gender)return false;
+    if(career&&a.career!==career)return false;
+    if(edu&&a.edu!==edu)return false;
+    return true;
+  });
+  sortApplicants(); renderTable();
+  document.getElementById('tcount').textContent='지원자 '+filtered.length+'명 (전체 '+all.length+'명)';
+}
+function resetFilters(){['f-search','f-job','f-status','f-gender','f-career','f-edu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});applyFilters();}
+function sortTable(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}sortApplicants();renderTable();}
+function sortApplicants(){filtered.sort((a,b)=>{let va=a[sortKey]||'',vb=b[sortKey]||'';if(typeof va==='number')return(va-vb)*sortDir;return String(va).localeCompare(String(vb),'ko')*sortDir;});}
+
+function renderTable(){
+  const tbody=document.getElementById('tbody');
+  if(!filtered.length){tbody.innerHTML='<tr class="empty-row"><td colspan="12">조건에 맞는 지원자가 없습니다</td></tr>';return;}
+  tbody.innerHTML=filtered.map(a=>`<tr>
+    <td><div class="td-name">${a.name||'—'}</div><div class="td-sub">${a.email||''}</div></td>
+    <td><span class="job-pill">${a.jobTitle||'—'}</span></td>
+    <td>${a.gender||'—'}</td><td>${a.age||'—'}세</td><td>${a.edu||'—'}</td><td>${a.career||'—'}</td>
+    <td>${a.lastSalary?a.lastSalary.toLocaleString()+'만':'—'}</td>
+    <td>${a.wantSalary?a.wantSalary.toLocaleString()+'만':'—'}</td>
+    <td>${a.files?.length?'📎 '+a.files.length+'개':'—'}</td>
+    <td><span class="badge ${BC[a.status]||''}">${a.status||'—'}</span></td>
+    <td>${a.submittedAt?new Date(a.submittedAt).toLocaleDateString('ko-KR'):'—'}</td>
+    <td><button class="act-btn" onclick="openModal('${a.id}')">상세</button><button class="act-btn d" onclick="del('${a.id}')">삭제</button></td>
+  </tr>`).join('');
+}
+
+// ── MODAL ──
+function openModal(id){
+  const a=all.find(x=>x.id===id);if(!a)return;curModalId=id;
+  document.getElementById('mTitle').textContent=a.name+' 지원자 상세';
+  const sBtns=['서류검토중','서류합격','면접진행','불합격','보류'].map(s=>{
+    const cls=a.status===s?'sbtn a-'+{서류검토중:'review',서류합격:'pass',면접진행:'interview',불합격:'fail',보류:'hold'}[s]:'sbtn';
+    return`<button class="${cls}" onclick="updateStatus('${id}','${s}')">${s}</button>`;
+  }).join('');
+  const files=(a.files||[]).map(f=>`<div class="mfile">📎 ${f.name}</div>`).join('')||'<div style="color:var(--light);font-size:12px;">첨부파일 없음</div>';
+  document.getElementById('mBody').innerHTML=`
+    <div class="msec"><div class="msec-title">기본 정보</div>
+      <div class="mgrid">
+        <div class="mfield"><div class="mfield-k">이름</div><div class="mfield-v">${a.name||'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">공고</div><div class="mfield-v">${a.jobTitle||'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">성별</div><div class="mfield-v">${a.gender||'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">나이</div><div class="mfield-v">${a.age||'—'}세 (${a.birth||'—'})</div></div>
+        <div class="mfield"><div class="mfield-k">연락처</div><div class="mfield-v">${a.phone||'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">이메일</div><div class="mfield-v">${a.email||'—'}</div></div>
+      </div></div>
+    <div class="msec"><div class="msec-title">학력 & 경력</div>
+      <div class="mgrid">
+        <div class="mfield"><div class="mfield-k">학력</div><div class="mfield-v">${a.edu||'—'} · ${a.major||'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">경력</div><div class="mfield-v">${a.career||'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">직전 직장</div><div class="mfield-v">${a.lastCompany||'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">직전/희망연봉</div><div class="mfield-v">${a.lastSalary?a.lastSalary.toLocaleString()+'만':'—'} → ${a.wantSalary?a.wantSalary.toLocaleString()+'만':'—'}</div></div>
+      </div></div>
+    <div class="msec"><div class="msec-title">첨부파일</div>${files}</div>
+    <div class="msec"><div class="msec-title">전형 단계 변경</div><div class="status-row">${sBtns}</div></div>
+    <div class="msec"><div class="msec-title">인사팀 메모</div>
+      <textarea class="memo-area" id="memoArea">${a.memo||''}</textarea>
+      <button class="save-btn" onclick="saveMemo('${id}')">💾 저장</button></div>`;
+  document.getElementById('modalOv').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOv').classList.remove('open');}
+function closeModalOv(e){if(e.target===document.getElementById('modalOv'))closeModal();}
+async function updateStatus(id,s){const a=all.find(x=>x.id===id);if(!a)return;a.status=s;await saveData();applyFilters();renderKPIs();renderOverviewCharts();renderAnalytics();openModal(id);showToast('✅ ['+s+']로 변경');}
+async function saveMemo(id){const a=all.find(x=>x.id===id);if(!a)return;a.memo=document.getElementById('memoArea').value;await saveData();showToast('💾 메모 저장');}
+async function del(id){if(!confirm('삭제하시겠습니까?'))return;all=all.filter(x=>x.id!==id);await saveData();applyFilters();renderKPIs();renderOverviewCharts();renderAnalytics();showToast('🗑 삭제됨');}
+
+// ── CONFIG ──
+function saveConfig(){
+  const token=document.getElementById('cfg-token').value.trim();
+  const dbid=document.getElementById('cfg-dbid').value.trim();
+  if(!token||!dbid){document.getElementById('cfg-status').textContent='❌ 토큰과 DB ID를 모두 입력해주세요.';return;}
+  localStorage.setItem('notion_token',token);localStorage.setItem('notion_dbid',dbid);
+  document.getElementById('cfg-status').textContent='✅ 저장 완료. Notion API는 CORS 제한으로 브라우저 직접 연동이 어렵습니다. 위 가이드의 대안 방법을 참고해주세요.';
+}
+function loadFromNotion(){document.getElementById('cfg-status').textContent='⚠️ Notion API CORS 제한으로 브라우저에서 직접 불러오기가 제한됩니다. Make/Zapier 연동 또는 서버사이드 프록시가 필요합니다.';}
+
+// ── CSV ──
+function exportCSV(){
+  const headers=['ID','공고','이름','성별','나이','생년월일','연락처','이메일','학력','전공','경력','직전직장','직전연봉(만)','희망연봉(만)','파일수','전형단계','지원일시','메모'];
+  const data=document.getElementById('globalJobFilter').value==='ALL'?all:all.filter(a=>a.jobTitle===document.getElementById('globalJobFilter').value);
+  const rows=data.map(a=>[a.id,a.jobTitle,a.name,a.gender,a.age,a.birth,a.phone,a.email,a.edu,a.major,a.career,a.lastCompany,a.lastSalary||'',a.wantSalary||'',a.files?.length||0,a.status,a.submittedAt?new Date(a.submittedAt).toLocaleString('ko-KR'):'',(a.memo||'').replace(/,/g,'|')]);
+  const csv='\uFEFF'+[headers,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);const el=document.createElement('a');
+  el.href=url;el.download='다산씨엔텍_지원자_'+new Date().toISOString().slice(0,10)+'.csv';
+  el.click();URL.revokeObjectURL(url);showToast('⬇ CSV 다운로드');
+}
+
+// ── TABS ──
+function switchTab(name){
+  ['overview','applicants','analytics','setup'].forEach(t=>{
+    document.getElementById('panel-'+t).classList.toggle('active',t===name);
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+  });
+  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+  const map={overview:0,applicants:1,analytics:2,setup:3};
+  document.querySelectorAll('.sb-item')[map[name]]?.classList.add('active');
+  if(name==='analytics')renderAnalytics();
+}
+
+// ── TOAST ──
+function showToast(msg,dur=3000){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+
+// ── INIT ──
+loadData();
+setInterval(loadData,30000);
+</script>
+</body>
+</html>
