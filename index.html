@@ -385,8 +385,8 @@ tbody td:nth-child(10){min-width:160px;text-align:left;}
                 <th class="sortable" onclick="sortTable('edu')">학력 ↕</th>
                 <th>전공</th>
                 <th class="sortable" onclick="sortTable('career')">경력 ↕</th>
-                <th class="sortable" onclick="sortTable('lastSalary')">직전연봉 ↕</th>
-                <th class="sortable" onclick="sortTable('wantSalary')">희망연봉 ↕</th>
+                <th class="sortable" onclick="sortTable('lastSalary')">직전연봉(만) ↕</th>
+                <th class="sortable" onclick="sortTable('wantSalary')">희망연봉(만) ↕</th>
                 <th>파일</th>
                 <th class="sortable" onclick="sortTable('status')">전형단계 ↕</th>
                 <th class="sortable" onclick="sortTable('submittedAt')">지원일 ↕</th>
@@ -1386,9 +1386,9 @@ function renderTable() {
     const age = calcAge(a.birth) || a.age || null;
     const ageStr = age ? age + '세' : '—';
 
-    // 연봉: 시트에서 온 숫자가 이미 만원 단위 (예: 4000 → 4,000만)
-    const lastSalStr = a.lastSalary ? Number(a.lastSalary).toLocaleString() + '만' : '—';
-    const wantSalStr = a.wantSalary ? Number(a.wantSalary).toLocaleString() + '만' : '—';
+    // 연봉: 8000 → 8,000 (만원 단위, 단위 텍스트 없이 숫자만)
+    const lastSalStr = a.lastSalary ? Number(a.lastSalary).toLocaleString() : '—';
+    const wantSalStr = a.wantSalary ? Number(a.wantSalary).toLocaleString() : '—';
 
     // 파일 - 한 줄에 표시 (구분자: 공백)
     const filesHtml = a.files?.length
@@ -1483,7 +1483,7 @@ function openModal(id) {
         <div class="mfield"><div class="mfield-k">최종학력</div><div class="mfield-v">${esc(a.edu)||'—'}</div></div>
         <div class="mfield"><div class="mfield-k">경력기간</div><div class="mfield-v">${esc(a.career)||'—'}</div></div>
         <div class="mfield"><div class="mfield-k">직전 직장</div><div class="mfield-v">${esc(a.lastCompany)||'—'}</div></div>
-        <div class="mfield"><div class="mfield-k">직전 → 희망연봉</div><div class="mfield-v">${a.lastSalary?Number(a.lastSalary).toLocaleString()+'만':'—'} → ${a.wantSalary?Number(a.wantSalary).toLocaleString()+'만':'—'}</div></div>
+        <div class="mfield"><div class="mfield-k">직전 → 희망연봉(만원)</div><div class="mfield-v">${a.lastSalary?Number(a.lastSalary).toLocaleString():'—'} → ${a.wantSalary?Number(a.wantSalary).toLocaleString():'—'}</div></div>
       </div></div>
     <div class="msec"><div class="msec-title">첨부파일</div>${files}</div>
     <div class="msec"><div class="msec-title">전형 단계 변경</div><div class="status-row" id="modalStatusRow">${sBtns}</div>
