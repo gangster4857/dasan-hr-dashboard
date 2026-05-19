@@ -120,7 +120,8 @@ html,body{height:100%;font-family:'Noto Sans KR',sans-serif;background:var(--bg)
 .twrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;min-width:1100px;}
 thead tr{background:var(--bg);}
-thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--light);border-bottom:1px solid var(--border);white-space:nowrap;}
+thead th{padding:8px 10px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--light);border-bottom:1px solid var(--border);white-space:nowrap;}
+thead th:first-child{text-align:left;}
 thead th.sortable{cursor:pointer;user-select:none;}
 thead th.sortable:hover{color:var(--teal);}
 
@@ -135,9 +136,11 @@ thead th.sortable:hover{color:var(--teal);}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:#F8FAFC;}
-tbody td{padding:9px 10px;font-size:12px;color:var(--ink);vertical-align:middle;}
+tbody td{padding:9px 10px;font-size:13px;color:var(--ink);vertical-align:middle;text-align:center;}
+tbody td:first-child{text-align:left;}
+tbody td:nth-child(10){min-width:160px;text-align:left;}
 .td-name{font-weight:700;}
-.td-sub{color:var(--mid);font-size:11px;}
+.td-sub{color:var(--mid);font-size:12px;}
 .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
 .b-review{background:var(--yellow-bg);color:var(--yellow);}
 .b-pass{background:var(--green-bg);color:var(--green);}
@@ -148,7 +151,17 @@ tbody td{padding:9px 10px;font-size:12px;color:var(--ink);vertical-align:middle;
 .b-offer{background:var(--orange-bg);color:var(--orange);}
 .b-final{background:#FDF6E3;color:var(--gold);}
 .b-gray{background:#F1F5F9;color:#64748B;}
-.job-pill{background:var(--teal-light);color:var(--teal);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+.job-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap;display:inline-block;}
+
+/* 공고별 컬러 - JS에서 동적 할당 */
+.jp-0{background:#E0F5F8;color:#0B7285;}
+.jp-1{background:#ECFDF5;color:#059669;}
+.jp-2{background:#EFF6FF;color:#2563EB;}
+.jp-3{background:#F5F3FF;color:#7C3AED;}
+.jp-4{background:#FFF7ED;color:#EA580C;}
+.jp-5{background:#FDF6E3;color:#B8912A;}
+.jp-6{background:#FEF2F2;color:#DC2626;}
+.jp-7{background:#F0FFF4;color:#16A34A;}
 .act-btn{padding:3px 8px;border-radius:4px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;color:var(--mid);transition:all .1s;margin-right:2px;}
 .act-btn:hover{border-color:var(--teal);color:var(--teal);}
 .act-btn.d:hover{border-color:var(--red);color:var(--red);}
@@ -1320,34 +1333,84 @@ function sortApplicants() {
   });
 }
 
+// 공고별 컬러 인덱스 캐시
+const jobColorMap = {};
+let jobColorIdx = 0;
+function getJobColorClass(jobTitle) {
+  if (!jobTitle) return 'jp-0';
+  if (jobColorMap[jobTitle] === undefined) {
+    jobColorMap[jobTitle] = jobColorIdx % 8;
+    jobColorIdx++;
+  }
+  return 'jp-' + jobColorMap[jobTitle];
+}
+
+// 만 나이 계산 (생년월일 문자열 기준)
+function calcAge(birth) {
+  if (!birth || birth === 'null' || birth === '—') return null;
+  // YYYY-MM-DD 또는 YYYY.MM.DD 또는 YYYYMMDD
+  const clean = String(birth).replace(/[.\-\/]/g, '');
+  if (clean.length < 8) return null;
+  const y = parseInt(clean.slice(0,4));
+  const m = parseInt(clean.slice(4,6)) - 1;
+  const d = parseInt(clean.slice(6,8));
+  if (isNaN(y)||isNaN(m)||isNaN(d)) return null;
+  const today = new Date();
+  const birthDate = new Date(y, m, d);
+  let age = today.getFullYear() - y;
+  if (today < new Date(today.getFullYear(), m, d)) age--;
+  return (age > 10 && age < 100) ? age : null;
+}
+
 function renderTable() {
   const tbody = document.getElementById('tbody');
   if (!filtered.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="13">조건에 맞는 지원자가 없습니다</td></tr>';
     return;
   }
-  tbody.innerHTML = filtered.map(a => `<tr>
-    <td><div class="td-name">${esc(a.name)||'—'}</div><div class="td-sub">${esc(a.email)||''}</div></td>
-    <td><span class="job-pill">${esc(a.jobTitle)||'—'}</span></td>
-    <td>${esc(a.gender)||'—'}</td>
-    <td>${a.age||'—'}세</td>
-    <td>${esc(a.edu)||'—'}</td>
-    <td style="font-size:11px;color:var(--mid);">${esc(a.major)||'—'}</td>
-    <td>${esc(a.career)||'—'}</td>
-    <td>${a.lastSalary ? Number(a.lastSalary).toLocaleString()+'만' : '—'}</td>
-    <td>${a.wantSalary ? Number(a.wantSalary).toLocaleString()+'만' : '—'}</td>
-    <td>${a.files?.length ? a.files.map(f => f.url && f.url !== '#' ? `<a href="${esc(f.url)}" target="_blank" style="color:var(--teal);font-size:11px;">📎 ${esc(f.name)}</a>` : `<span style="font-size:11px;color:var(--mid);">📎 ${esc(f.name)}</span>`).join('<br>') : '—'}</td>
-    <td>
-      <select class="status-sel ${SC_CLASS[a.status]||''}" onchange="updateStatus('${a.id}',this.value,this)">
-        ${STATUS_LIST.map(s=>`<option value="${s}" ${a.status===s?'selected':''}>${s}</option>`).join('')}
-      </select>
-    </td>
-    <td style="font-size:11px;">${a.submittedAt ? new Date(a.submittedAt).toLocaleDateString('ko-KR') : '—'}</td>
-    <td>
-      <button class="act-btn" onclick="openModal('${a.id}')">상세</button>
-      ${!a.fromSheet ? `<button class="act-btn d" onclick="del('${a.id}')">삭제</button>` : ''}
-    </td>
-  </tr>`).join('');
+  tbody.innerHTML = filtered.map(a => {
+    // 만 나이 계산
+    const age = calcAge(a.birth) || a.age || null;
+    const ageStr = age ? age + '세' : '—';
+
+    // 연봉: 시트에서 온 숫자가 이미 만원 단위 (예: 4000 → 4,000만)
+    const lastSalStr = a.lastSalary ? Number(a.lastSalary).toLocaleString() + '만' : '—';
+    const wantSalStr = a.wantSalary ? Number(a.wantSalary).toLocaleString() + '만' : '—';
+
+    // 파일 - 한 줄에 표시 (구분자: 공백)
+    const filesHtml = a.files?.length
+      ? a.files.map(f => f.url && f.url !== '#'
+          ? `<a href="${esc(f.url)}" target="_blank" style="color:var(--teal);font-size:12px;white-space:nowrap;">📎 ${esc(f.name)}</a>`
+          : `<span style="font-size:12px;color:var(--mid);white-space:nowrap;">📎 ${esc(f.name)}</span>`
+        ).join('&nbsp;&nbsp;')
+      : '—';
+
+    // 공고 컬러
+    const jpClass = getJobColorClass(a.jobTitle);
+
+    return `<tr>
+      <td><div class="td-name">${esc(a.name)||'—'}</div><div class="td-sub">${esc(a.email)||''}</div></td>
+      <td><span class="job-pill ${jpClass}">${esc(a.jobTitle)||'—'}</span></td>
+      <td>${esc(a.gender)||'—'}</td>
+      <td>${ageStr}</td>
+      <td>${esc(a.edu)||'—'}</td>
+      <td style="font-size:12px;color:var(--mid);">${esc(a.major)||'—'}</td>
+      <td>${esc(a.career)||'—'}</td>
+      <td>${lastSalStr}</td>
+      <td>${wantSalStr}</td>
+      <td style="white-space:nowrap;">${filesHtml}</td>
+      <td>
+        <select class="status-sel ${SC_CLASS[a.status]||''}" onchange="updateStatus('${a.id}',this.value,this)">
+          ${STATUS_LIST.map(s=>`<option value="${s}" ${a.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td style="font-size:12px;">${a.submittedAt ? new Date(a.submittedAt).toLocaleDateString('ko-KR') : '—'}</td>
+      <td>
+        <button class="act-btn" onclick="openModal('${a.id}')">상세</button>
+        ${!a.fromSheet ? `<button class="act-btn d" onclick="del('${a.id}')">삭제</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1396,7 +1459,7 @@ function openModal(id) {
         <div class="mfield"><div class="mfield-k">이름</div><div class="mfield-v">${esc(a.name)||'—'}</div></div>
         <div class="mfield"><div class="mfield-k">지원 공고</div><div class="mfield-v">${esc(a.jobTitle)||'—'}</div></div>
         <div class="mfield"><div class="mfield-k">성별</div><div class="mfield-v">${esc(a.gender)||'—'}</div></div>
-        <div class="mfield"><div class="mfield-k">나이</div><div class="mfield-v">${a.age||'—'}세 (${esc(a.birth)||'—'})</div></div>
+        <div class="mfield"><div class="mfield-k">나이</div><div class="mfield-v">${calcAge(a.birth) || a.age || '—'}세 (${esc(a.birth)||'—'})</div></div>
         <div class="mfield"><div class="mfield-k">연락처</div><div class="mfield-v">${esc(a.phone)||'—'}</div></div>
         <div class="mfield"><div class="mfield-k">이메일</div><div class="mfield-v">${esc(a.email)||'—'}</div></div>
       </div></div>
