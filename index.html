@@ -137,7 +137,6 @@ tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:#F8FAFC;}
 tbody td{padding:9px 10px;font-size:13px;color:var(--ink);vertical-align:middle;text-align:center;}
-tbody td:first-child{text-align:left;}
 tbody td:nth-child(10){min-width:160px;text-align:left;}
 .td-name{font-weight:700;}
 .td-sub{color:var(--mid);font-size:12px;}
@@ -162,9 +161,10 @@ tbody td:nth-child(10){min-width:160px;text-align:left;}
 .jp-5{background:#FDF6E3;color:#B8912A;}
 .jp-6{background:#FEF2F2;color:#DC2626;}
 .jp-7{background:#F0FFF4;color:#16A34A;}
-.act-btn{padding:3px 8px;border-radius:4px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;color:var(--mid);transition:all .1s;margin-right:2px;}
+.act-btn{padding:3px 8px;border-radius:4px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;color:var(--mid);transition:all .1s;margin-right:2px;white-space:nowrap;}
 .act-btn:hover{border-color:var(--teal);color:var(--teal);}
 .act-btn.d:hover{border-color:var(--red);color:var(--red);}
+.td-actions{white-space:nowrap;}
 .empty-row td{text-align:center;padding:40px;color:var(--light);}
 .tcount{font-size:12px;color:var(--mid);margin-bottom:8px;display:flex;align-items:center;gap:10px;}
 .active-filter-tag{background:var(--teal-light);color:var(--teal);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;}
@@ -1345,18 +1345,31 @@ function getJobColorClass(jobTitle) {
   return 'jp-' + jobColorMap[jobTitle];
 }
 
-// 만 나이 계산 (생년월일 문자열 기준)
+// 만 나이 계산
+// 지원 형식: YYYY-MM-DD / YYYY.MM.DD / YYYY. M. D (구글시트 날짜) / YYYYMMDD
 function calcAge(birth) {
-  if (!birth || birth === 'null' || birth === '—') return null;
-  // YYYY-MM-DD 또는 YYYY.MM.DD 또는 YYYYMMDD
-  const clean = String(birth).replace(/[.\-\/]/g, '');
-  if (clean.length < 8) return null;
-  const y = parseInt(clean.slice(0,4));
-  const m = parseInt(clean.slice(4,6)) - 1;
-  const d = parseInt(clean.slice(6,8));
+  if (!birth || birth === 'null' || birth === '—' || birth === 'undefined') return null;
+  const s = String(birth).trim();
+
+  let y, m, d;
+
+  // "2026. 5. 19" 또는 "2026.5.19" 형식 (구글시트 날짜)
+  const korMatch = s.match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/);
+  if (korMatch) {
+    y = parseInt(korMatch[1]);
+    m = parseInt(korMatch[2]) - 1;
+    d = parseInt(korMatch[3]);
+  } else {
+    // YYYY-MM-DD 또는 YYYYMMDD
+    const clean = s.replace(/[.\-\/\s]/g, '');
+    if (clean.length < 8) return null;
+    y = parseInt(clean.slice(0,4));
+    m = parseInt(clean.slice(4,6)) - 1;
+    d = parseInt(clean.slice(6,8));
+  }
+
   if (isNaN(y)||isNaN(m)||isNaN(d)) return null;
   const today = new Date();
-  const birthDate = new Date(y, m, d);
   let age = today.getFullYear() - y;
   if (today < new Date(today.getFullYear(), m, d)) age--;
   return (age > 10 && age < 100) ? age : null;
@@ -1405,7 +1418,7 @@ function renderTable() {
         </select>
       </td>
       <td style="font-size:12px;">${a.submittedAt ? new Date(a.submittedAt).toLocaleDateString('ko-KR') : '—'}</td>
-      <td>
+      <td class="td-actions">
         <button class="act-btn" onclick="openModal('${a.id}')">상세</button>
         ${!a.fromSheet ? `<button class="act-btn d" onclick="del('${a.id}')">삭제</button>` : ''}
       </td>
