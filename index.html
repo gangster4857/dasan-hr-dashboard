@@ -806,7 +806,8 @@ function parseGVizData(json) {
   const VALID_STATUS = ['서류검토중','서류합격','면접진행','면접합격','OFFER진행','최종합격','보류','불합격'];
 
   return (json.table.rows || []).map((row, ri) => {
-    const v = (i) => (i >= 0 && row.c && row.c[i]) ? (row.c[i].f ?? row.c[i].v ?? '') : '';
+    const v    = (i) => (i >= 0 && row.c && row.c[i]) ? (row.c[i].f ?? row.c[i].v ?? '') : '';
+    const vRaw = (i) => (i >= 0 && row.c && row.c[i]) ? (row.c[i].v ?? row.c[i].f ?? '') : ''; // 숫자 컬럼용: raw value 우선
 
     // 전형단계: 비어있거나 유효하지 않으면 '서류검토중' 자동 처리
     const rawStatus = String(v(iStatus)).trim();
@@ -833,6 +834,13 @@ function parseGVizData(json) {
     if (cUrl && cUrl !== 'null' && cUrl !== '') files.push({ name:'자기소개서', url: cUrl });
     if (pUrl && pUrl !== 'null' && pUrl !== '') files.push({ name:'포트폴리오', url: pUrl });
 
+    // 연봉 파싱: "3000" 또는 "3,000" 둘 다 처리
+    const parseSalary = (i) => {
+      const raw = String(vRaw(i) ?? '').replace(/,/g, '').trim();
+      const num = parseFloat(raw);
+      return isNaN(num) ? 0 : num;
+    };
+
     return {
       id:          'GS' + ri,
       status,
@@ -849,8 +857,8 @@ function parseGVizData(json) {
       edu:         String(v(iEdu)).trim(),
       career:      String(v(iCareer)).trim(),
       lastCompany: String(v(iLastCompany)).trim(),
-      lastSalary:  parseFloat(v(iLsalary))  || 0,
-      wantSalary:  parseFloat(v(iWsalary))  || 0,
+      lastSalary:  parseSalary(iLsalary),
+      wantSalary:  parseSalary(iWsalary),
       files,
       memo:        String(v(iMemo)).trim(),
       fromSheet:   true
